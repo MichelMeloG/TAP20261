@@ -1,8 +1,6 @@
 package cleancode;
 
-import cleancode.desconto.DescontoClienteComum;
-import cleancode.desconto.DescontoClientePremium;
-import cleancode.desconto.DescontoClienteVip;
+
 import cleancode.desconto.IRegraDesconto;
 
 import java.util.List;

@@ -4,62 +4,83 @@ import java.util.List;
 
 public class Relatorio {
 
-    public void gerar(List<Pedido> ps) {
+    private static final double META_MUITO_BOM = 1000.0;
+    private static final double META_BOA = 500.0;
+
+    public void gerar(List<Pedido> pedidos) {
         System.out.println("======= RELATORIO =======");
 
-        int qtd = 0;
-        double soma = 0;
-        int cancelados = 0;
-        int comuns = 0;
-        int premiums = 0;
-        int vips = 0;
+        int totalPedidos = 0;
+        double valorTotal = 0;
+        int pedidosCancelados = 0;
+        int clientesComuns = 0;
+        int clientesPremiums = 0;
+        int clientesVips = 0;
 
-        for (int i = 0; i < ps.size(); i++) {
-            Pedido p = ps.get(i);
-            qtd++;
+        for (Pedido pedido : pedidos) {
+            totalPedidos++;
 
-            soma = soma + p.total;
+            valorTotal = valorTotal + pedido.getTotalPedido();
 
-            if (p.status.equals("CANCELADO")) {
-                cancelados++;
+            if (pedido.isCancelado()) {
+                pedidosCancelados++;
+
+
+                if (pedido.getCliente().isComum()) {
+                    clientesComuns++;
+                } else if (pedido.getCliente().isPremium()) {
+                    clientesPremiums++;
+                } else if (pedido.getCliente().isVip()) {
+                    clientesVips++;
+                }
+
+                imprimirDetalhesDoPedido(pedido);
+
             }
 
-            if (p.cliente.tipoCliente == 1) {
-                comuns++;
-            } else if (p.cliente.tipoCliente == 2) {
-                premiums++;
-            } else if (p.cliente.tipoCliente == 3) {
-                vips++;
-            }
+            imprimirResumo(totalPedidos, valorTotal, pedidosCancelados, clientesComuns, clientesPremiums, clientesVips);
+            avaliarResultado(valorTotal);
 
-            System.out.println("Pedido " + p.id + " - " + p.cliente.nome + " - " + p.total + " - " + p.status);
 
-            for (int j = 0; j < p.itens.size(); j++) {
-                Item it = p.itens.get(j);
-                System.out.println("   item: " + it.nome + " qtd:" + it.qtd + " preco:" + it.preco);
-            }
         }
 
-        System.out.println("--------------------");
-        System.out.println("qtd pedidos: " + qtd);
-        System.out.println("valor total: " + soma);
-        System.out.println("cancelados: " + cancelados);
-        System.out.println("clientes comuns: " + comuns);
-        System.out.println("clientes premium: " + premiums);
-        System.out.println("clientes vip: " + vips);
 
-        if (qtd > 0) {
-            System.out.println("media: " + (soma / qtd));
-        } else {
-            System.out.println("media: 0");
-        }
+    }
 
-        if (soma > 1000) {
+    private void avaliarResultado(double valorTotal){
+        if (valorTotal > META_MUITO_BOM) {
             System.out.println("resultado muito bom");
-        } else if (soma > 500) {
+        } else if (valorTotal > META_BOA) {
             System.out.println("resultado ok");
         } else {
             System.out.println("resultado fraco");
+        }
+    }
+
+    private void imprimirDetalhesDoPedido(Pedido pedido){
+        System.out.println("Pedido " + pedido.getId() + " - " + pedido.getCliente().getNome() + " - " + pedido.getTotalPedido() + " - " + pedido.getStatusPedido());
+
+        for (Item item : pedido.getItens()) {
+
+            System.out.println("   item: " + item.getNome() + " totalPedidos:" + item.getQtd() + " preco:" + item.getPreco());
+        }
+    }
+
+    private void imprimirResumo(int totalPedidos, double valorTotal, int pedidosCancelados,
+                                int clientesComuns, int clientesPremiums, int clientesVips) {
+        System.out.println("--------------------");
+        System.out.println("totalPedidos pedidos: " + totalPedidos);
+        System.out.println("valor total: " + valorTotal);
+        System.out.println("pedidosCancelados: " + pedidosCancelados);
+        System.out.println("clientes clientesComuns: " + clientesComuns);
+        System.out.println("clientes premium: " + clientesPremiums);
+        System.out.println("clientes vip: " + clientesVips);
+
+
+        if (totalPedidos > 0) {
+            System.out.println("media: " + (valorTotal / totalPedidos));
+        } else {
+            System.out.println("media: 0");
         }
     }
 }

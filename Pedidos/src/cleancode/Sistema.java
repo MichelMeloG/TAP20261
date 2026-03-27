@@ -6,45 +6,40 @@ import java.util.Scanner;
 
 public class Sistema {
 
-    Scanner scanner = new Scanner(System.in);
-    List<Pedido> pedidos = new ArrayList<>();
-    Db db = new Db();
+    private final Scanner scanner = new Scanner(System.in);
+    private final List<Pedido> pedidos = new ArrayList<>();
+    private final Db db = new Db();
 
     public void exibirMenu() {
         int operacao = -1;
 
         while (operacao != 0) {
-            System.out.println("==== SISTEMA ====");
-            System.out.println("1 - Novo pedido");
-            System.out.println("2 - Listar pedidos");
-            System.out.println("3 - Buscar pedido por id");
-            System.out.println("4 - Relatorio");
-            System.out.println("5 - Cancelar pedido");
-            System.out.println("0 - Sair");
-            System.out.print("Opcao: ");
+            imprimirOpcoesMenu();
+            operacao = lerOpcaoSegura();
 
-            try {
-                operacao = Integer.parseInt(scanner.nextLine());
-            } catch (Exception e) {
-                System.out.println("erro");
-                operacao = -1;
+            switch (operacao){
+                case 1:
+                    novoPedido();
+                    break;
+                case 2:
+                    buscar();
+                    break;
+                case 3:
+                    listar();
+                    break;
+                case 4:
+                    gerarRelatorio();
+                    break;
+                case 5:
+                    cancelar();
+                    break;
+                case 0:
+                    System.out.println("Encerrando Sistema...");
+                    break;
+                default:
+                    System.out.println("Operação Invalida!");
             }
 
-            if (operacao == 1) {
-                novoPedido();
-            } else if (operacao == 2) {
-                listar();
-            } else if (operacao == 3) {
-                buscar();
-            } else if (operacao == 4) {
-                rel();
-            } else if (operacao == 5) {
-                cancelar();
-            } else if (operacao == 0) {
-                System.out.println("fim");
-            } else {
-                System.out.println("opcao invalida");
-            }
         }
     }
 
@@ -53,120 +48,48 @@ public class Sistema {
         String nomeCliente = scanner.nextLine();
 
         System.out.println("Tipo cliente (1 comum, 2 premium, 3 vip):");
-        int tipoCliente = 0;
-        try {
-            tipoCliente = Integer.parseInt(scanner.nextLine());
-        } catch (Exception e) {
-            System.out.println("Tipo de cliente inexistente, usuario comum selecionado");
-            tipoCliente = 1;
-        }
+        TipoCliente tipoCliente = converterParaTipoCliente(lerOpcaoSegura());
 
-        Cliente c = new Cliente();
-        c.id = pedidos.size() + 1;
-        c.nome = nomeCliente;
-        c.tipoCliente = tipoCliente;
-        c.email = nomeCliente.replace(" ", "").toLowerCase() + "@email.com";
+        int novoId = pedidos.size() + 1;
+        String email = nomeCliente.replace(" ", "").toLowerCase() + "@email.com";
+        Cliente cliente = new Cliente(novoId, nomeCliente, email, tipoCliente);
 
-        Pedido p = new Pedido();
-        p.id = pedidos.size() + 1;
-        p.cliente = c;
-        p.status = "NOVO";
-        p.itens = new ArrayList<>();
+        Pedido pedido = new Pedido(novoId, cliente, StatusPedido.NOVO);
 
-        String continua = "s";
-        while (continua.equalsIgnoreCase("s")) {
-            System.out.println("Nome item:");
-            String ni = scanner.nextLine();
+        adicionarItensAoPedido(pedido);
 
-            System.out.println("Preco item:");
-            double pr = 0;
-            try {
-                pr = Double.parseDouble(scanner.nextLine());
-            } catch (Exception e) {
-                pr = 0;
-            }
+        double totalFinal = calcularValorFinalComDesconteFrete(pedido);
+        pedido.setTotalPedido(totalFinal);
 
-            System.out.println("Qtd:");
-            int q = 0;
-            try {
-                q = Integer.parseInt(scanner.nextLine());
-            } catch (Exception e) {
-                q = 1;
-            }
-
-            Item i = new Item();
-            i.nome = ni;
-            i.preco = pr;
-            i.qtd = q;
-            p.itens.add(i);
-
-            System.out.println("Adicionar mais item? s/n");
-            continua = scanner.nextLine();
-        }
-
-        double total = 0;
-        for (int i = 0; i < p.itens.size(); i++) {
-            total = total + (p.itens.get(i).preco * p.itens.get(i).qtd);
-        }
-
-        // regra de desconto
-        if (c.tipoCliente == 1) {
-            if (total > 300) {
-                total = total - (total * 0.05);
-            }
-        } else if (c.tipoCliente == 2) {
-            if (total > 200) {
-                total = total - (total * 0.10);
-            } else {
-                total = total - (total * 0.03);
-            }
-        } else if (c.tipoCliente == 3) {
-            total = total - (total * 0.15);
-        } else {
-            total = total;
-        }
-
-        // frete
-        if (total < 100) {
-            total = total + 25;
-        } else if (total >= 100 && total < 300) {
-            total = total + 15;
-        } else {
-            total = total + 0;
-        }
-
-        p.total = total;
-
-        pedidos.add(p);
-        db.save(p);
+        pedidos.add(pedido);
+        db.save(pedido);
 
         System.out.println("Pedido criado com sucesso");
-        System.out.println("Id: " + p.id);
-        System.out.println("Cliente: " + p.cliente.nome);
-        System.out.println("Total: " + p.total);
+        System.out.println("Id: " + pedido.getId());
+        System.out.println("Cliente: " + pedido.getCliente().getNome());
+        System.out.println("Total: " + pedido.getTotalPedido());
 
-        if (p.total > 500) {
+        if (pedido.getTotalPedido() > 500) {
             System.out.println("Pedido importante!!!");
         }
     }
 
     public void listar() {
-        if (pedidos.size() == 0) {
+
+        if (pedidos.isEmpty()) {
             System.out.println("sem pedidos");
         } else {
-            for (int i = 0; i < pedidos.size(); i++) {
-                Pedido p = pedidos.get(i);
+            for (Pedido pedido : pedidos) {
                 System.out.println("---------------");
-                System.out.println("id: " + p.id);
-                System.out.println("cliente: " + p.cliente.nome);
-                System.out.println("email: " + p.cliente.email);
-                System.out.println("tipo: " + p.cliente.tipoCliente);
-                System.out.println("status: " + p.status);
-                System.out.println("total: " + p.total);
+                System.out.println("id: " + pedido.getId());
+                System.out.println("cliente: " + pedido.getCliente().getNome());
+                System.out.println("email: " + pedido.getCliente().getEmail());
+                System.out.println("tipo: " + pedido.getCliente().getTipoCliente());
+                System.out.println("status: " + pedido.getStatusPedido());
+                System.out.println("total: " + pedido.getTotalPedido());
                 System.out.println("itens:");
-                for (int j = 0; j < p.itens.size(); j++) {
-                    Item it = p.itens.get(j);
-                    System.out.println(it.nome + " - " + it.qtd + " - " + it.preco);
+                for (Item item : pedido.getItens()) {
+                    System.out.println(item.getNome() + " - " + item.getQtd() + " - " + item.getPreco());
                 }
             }
         }
@@ -174,62 +97,57 @@ public class Sistema {
 
     public void buscar() {
         System.out.println("Digite o id:");
-        int id = Integer.parseInt(scanner.nextLine());
-        boolean achou = false;
+        int id = lerOpcaoSegura();
 
-        for (int i = 0; i < pedidos.size(); i++) {
-            Pedido p = pedidos.get(i);
-            if (p.id == id) {
-                achou = true;
+        for (Pedido pedido : pedidos) {
+            if (pedido.getId() == id) {
                 System.out.println("Pedido encontrado");
-                System.out.println("id: " + p.id);
-                System.out.println("cliente: " + p.cliente.nome);
-                System.out.println("status: " + p.status);
-                System.out.println("total: " + p.total);
+                System.out.println("id: " + pedido.getId());
+                System.out.println("cliente: " + pedido.getCliente().getNome());
+                System.out.println("status: " + pedido.getStatusPedido());
+                System.out.println("total: " + pedido.getTotalPedido());
 
-                double subtotal = 0;
-                for (int j = 0; j < p.itens.size(); j++) {
-                    subtotal = subtotal + (p.itens.get(j).preco * p.itens.get(j).qtd);
-                }
-                System.out.println("subtotal calculado novamente: " + subtotal);
 
-                if (p.cliente.tipoCliente == 1) {
+                System.out.println("subtotal: " + pedido.getSubtotalItens());
+
+                if (pedido.getCliente().isComum()) {
                     System.out.println("cliente comum");
-                } else if (p.cliente.tipoCliente == 2) {
+                } else if (pedido.getCliente().isPremium()) {
                     System.out.println("cliente premium");
-                } else if (p.cliente.tipoCliente == 3) {
+                } else if (pedido.getCliente().isVip()) {
                     System.out.println("cliente vip");
                 } else {
                     System.out.println("cliente desconhecido");
                 }
 
-                for (int j = 0; j < p.itens.size(); j++) {
-                    Item it = p.itens.get(j);
-                    System.out.println("item " + (j + 1) + ": " + it.nome + " / " + it.qtd + " / " + it.preco);
+                int contador = 1;
+                for (Item item : pedido.getItens() ) {
+                    System.out.println("item " + contador + ": " + item.getNome() + " / " + item.getQtd() + " / " + item.getPreco());
+                    contador++;
                 }
             }
+            return;
         }
 
-        if (achou == false) {
-            System.out.println("nao achou");
-        }
+        System.out.println("Pedido não encontrado");
+
     }
 
-    public void rel() {
-        Relatorio r = new Relatorio();
-        r.gerar(pedidos);
+    public void gerarRelatorio() {
+        Relatorio relatorio = new Relatorio();
+        relatorio.gerar(pedidos);
     }
 
     public void cancelar() {
         System.out.println("Digite id do pedido");
-        int id = Integer.parseInt(scanner.nextLine());
+        int id = lerOpcaoSegura();
 
-        for (int i = 0; i < pedidos.size(); i++) {
-            if (pedidos.get(i).id == id) {
-                if (pedidos.get(i).status.equals("CANCELADO")) {
+        for (Pedido pedido : pedidos) {
+            if (pedido.getId() == id) {
+                if (pedido.isCancelado()) {
                     System.out.println("ja cancelado");
                 } else {
-                    pedidos.get(i).status = "CANCELADO";
+                    pedido.cancelar();
                     System.out.println("cancelado");
                 }
                 return;
@@ -238,4 +156,102 @@ public class Sistema {
 
         System.out.println("pedido nao existe");
     }
+
+
+    private void adicionarItensAoPedido(Pedido pedido) {
+        String continua = "s";
+        while (continua.equalsIgnoreCase("s")) {
+            System.out.println("Nome do item:");
+            String nomeItem = scanner.nextLine();
+
+            System.out.println("Preço do item:");
+            double preco = 0;
+            try
+            {
+                preco = Double.parseDouble(scanner.nextLine());
+            }
+            catch (Exception ignored)
+            {
+
+            }
+
+            System.out.println("Quantidade:");
+            int quantidade = 1;
+
+            try
+            {
+                quantidade = Integer.parseInt(scanner.nextLine());
+            }
+            catch (Exception ignored)
+            {
+
+            }
+
+            pedido.adicionarItem(new Item(nomeItem, quantidade, (int) preco));
+
+            System.out.println("Adicionar mais itens? (s/n)");
+            continua = scanner.nextLine();
+        }
+    }
+
+    public void imprimirOpcoesMenu(){
+        System.out.println("==== SISTEMA ====");
+        System.out.println("1 - Novo pedido");
+        System.out.println("2 - Listar pedidos");
+        System.out.println("3 - Buscar pedido por id");
+        System.out.println("4 - Relatorio");
+        System.out.println("5 - Cancelar pedido");
+        System.out.println("0 - Sair");
+        System.out.print("Opcao: ");
+    }
+
+    public int lerOpcaoSegura(){
+        try {
+            return Integer.parseInt(scanner.nextLine());
+        } catch (Exception e) {
+            System.out.println("erro");
+            return -1;
+        }
+    }
+
+    private TipoCliente converterParaTipoCliente(int input) {
+        return switch (input) {
+            case 1 :
+                yield TipoCliente.COMUM;
+            case 2 :
+                yield TipoCliente.PREMIUM;
+            case 3 :
+                yield TipoCliente.VIP;
+            default :
+                System.out.println("Tipo de cliente inválido, cliente comum selecionado");
+                yield TipoCliente.COMUM;
+
+        };
+    }
+
+    double calcularValorFinalComDesconteFrete(Pedido pedido){
+
+        double total = pedido.getTotalPedido();
+        Cliente cliente = pedido.getCliente();
+
+        if (cliente.isComum() && total > 300){
+            total -= total * 0.05;
+        } else if (cliente.isPremium() && total > 200){
+            total -= total * 0.10;
+        } else if (cliente.isPremium() && total < 200){
+            total -= total * 0.03;
+        } else if (cliente.isVip()){
+            total -= total * 0.15;
+        }
+
+        if (total < 100) {
+            total += 25;
+        } else if (total < 300) {
+            total += 15;
+        }
+
+        return total;
+
+    }
 }
+

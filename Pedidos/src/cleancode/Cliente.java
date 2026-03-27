@@ -1,20 +1,39 @@
 package cleancode;
 
 public class Cliente {
-    public int id;
-    public String nome;
-    public String email;
-    public int tipoCliente; // 1 comum, 2 premium, 3 vip
+    private final int id;
+    private final String nome;
+    private final String email;
+    private final TipoCliente tipoCliente;
 
-    public String getTipoDesc() {
-        if (tipoCliente == 1) {
-            return "comum";
-        } else if (tipoCliente == 2) {
-            return "premium";
-        } else if (tipoCliente == 3) {
-            return "vip";
-        } else {
-            return "outro";
-        }
+    public Cliente(int id, String nome, String email, TipoCliente tipoCliente) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+        this.tipoCliente = tipoCliente;
+    }
+
+    public boolean isComum(){
+        return this.tipoCliente == TipoCliente.COMUM;
+    }
+
+    public boolean isPremium(){
+        return this.tipoCliente == TipoCliente.PREMIUM;
+    }
+
+    public boolean isVip(){
+        return this.tipoCliente == TipoCliente.VIP;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public TipoCliente getTipoCliente() {
+        return tipoCliente;
     }
 }

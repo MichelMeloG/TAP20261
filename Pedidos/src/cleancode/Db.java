@@ -7,22 +7,22 @@ public class Db {
 
     public static List<Pedido> banco = new ArrayList<>();
 
-    public void save(Pedido p) {
+    public void save(Pedido pedido) {
         try {
-            banco.add(p);
+            banco.add(pedido);
             System.out.println("salvou no banco");
         } catch (Exception e) {
             System.out.println("erro ao salvar");
         }
     }
 
-    public List<Pedido> getAll() {
+    public List<Pedido> getTodosPedidos() {
         return banco;
     }
 
-    public Pedido getById(int id) {
+    public Pedido buscarPorId(int id) {
         for (Pedido pedido : banco) {
-            if (pedido.id == id) {
+            if (pedido.getId() == id) {
                 return pedido;
             }
         }

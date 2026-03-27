@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Pedido {
-    private int id;
-    private Cliente cliente;
-    private List<Item> itens;
+    private final int id;
+    private final Cliente cliente;
+    private final List<Item> itens;
     private double totalPedido;
     private StatusPedido statusPedido;
 

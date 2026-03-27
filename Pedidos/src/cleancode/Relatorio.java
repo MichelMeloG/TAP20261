@@ -58,16 +58,15 @@ public class Relatorio {
     }
 
     private void imprimirDetalhesDoPedido(Pedido pedido){
-        System.out.println("Pedido " + pedido.getId() + " - " + pedido.getCliente().getNome() + " - " + pedido.getTotalPedido() + " - " + pedido.getStatusPedido());
+        System.out.println("Pedido " + pedido.getId() + " - " + pedido.getCliente().nome() + " - " + pedido.getTotalPedido() + " - " + pedido.getStatusPedido());
 
         for (Item item : pedido.getItens()) {
 
-            System.out.println("   item: " + item.getNome() + " totalPedidos:" + item.getQtd() + " preco:" + item.getPreco());
+            System.out.println("   item: " + item.nome() + " totalPedidos:" + item.qtd() + " preco:" + item.preco());
         }
     }
 
-    private void imprimirResumo(int totalPedidos, double valorTotal, int pedidosCancelados,
-                                int clientesComuns, int clientesPremiums, int clientesVips) {
+    private void imprimirResumo(int totalPedidos, double valorTotal, int pedidosCancelados, int clientesComuns, int clientesPremiums, int clientesVips) {
         System.out.println("--------------------");
         System.out.println("totalPedidos pedidos: " + totalPedidos);
         System.out.println("valor total: " + valorTotal);

@@ -1,14 +1,15 @@
 package cleancode;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class Sistema {
 
     private final Scanner scanner = new Scanner(System.in);
-    private final List<Pedido> pedidos = new ArrayList<>();
+
     private final Db db = new Db();
+    private final List<Pedido> pedidos = db.getTodosPedidos();
+    //a lista de pedidos estava sendo salva em outra lista e o Db estava inutilizado
 
     public void exibirMenu() {
         int operacao = -1;
@@ -22,10 +23,10 @@ public class Sistema {
                     novoPedido();
                     break;
                 case 2:
-                    buscar();
+                    listar();
                     break;
                 case 3:
-                    listar();
+                    buscarPorId();
                     break;
                 case 4:
                     gerarRelatorio();
@@ -58,7 +59,7 @@ public class Sistema {
 
         adicionarItensAoPedido(pedido);
 
-        double totalFinal = calcularValorFinalComDesconteFrete(pedido);
+        double totalFinal = calcularValorFinalComDescontoFrete(pedido);
         pedido.setTotalPedido(totalFinal);
 
         pedidos.add(pedido);
@@ -66,7 +67,7 @@ public class Sistema {
 
         System.out.println("Pedido criado com sucesso");
         System.out.println("Id: " + pedido.getId());
-        System.out.println("Cliente: " + pedido.getCliente().getNome());
+        System.out.println("Cliente: " + pedido.getCliente().nome());
         System.out.println("Total: " + pedido.getTotalPedido());
 
         if (pedido.getTotalPedido() > 500) {
@@ -82,20 +83,20 @@ public class Sistema {
             for (Pedido pedido : pedidos) {
                 System.out.println("---------------");
                 System.out.println("id: " + pedido.getId());
-                System.out.println("cliente: " + pedido.getCliente().getNome());
-                System.out.println("email: " + pedido.getCliente().getEmail());
-                System.out.println("tipo: " + pedido.getCliente().getTipoCliente());
+                System.out.println("cliente: " + pedido.getCliente().nome());
+                System.out.println("email: " + pedido.getCliente().email());
+                System.out.println("tipo: " + pedido.getCliente().tipoCliente());
                 System.out.println("status: " + pedido.getStatusPedido());
                 System.out.println("total: " + pedido.getTotalPedido());
                 System.out.println("itens:");
                 for (Item item : pedido.getItens()) {
-                    System.out.println(item.getNome() + " - " + item.getQtd() + " - " + item.getPreco());
+                    System.out.println(item.nome() + " - " + item.qtd() + "un" + " - " + "R$" + item.preco() );
                 }
             }
         }
     }
 
-    public void buscar() {
+    public void buscarPorId() {
         System.out.println("Digite o id:");
         int id = lerOpcaoSegura();
 
@@ -103,7 +104,7 @@ public class Sistema {
             if (pedido.getId() == id) {
                 System.out.println("Pedido encontrado");
                 System.out.println("id: " + pedido.getId());
-                System.out.println("cliente: " + pedido.getCliente().getNome());
+                System.out.println("cliente: " + pedido.getCliente().nome());
                 System.out.println("status: " + pedido.getStatusPedido());
                 System.out.println("total: " + pedido.getTotalPedido());
 
@@ -122,10 +123,11 @@ public class Sistema {
 
                 int contador = 1;
                 for (Item item : pedido.getItens() ) {
-                    System.out.println("item " + contador + ": " + item.getNome() + " / " + item.getQtd() + " / " + item.getPreco());
+                    System.out.println("item " + contador + ": " + item.nome() + " - " + item.qtd() + "un " + " - R$" + item.preco());
                     contador++;
                 }
             }
+
             return;
         }
 
@@ -164,33 +166,44 @@ public class Sistema {
             System.out.println("Nome do item:");
             String nomeItem = scanner.nextLine();
 
-            System.out.println("Preço do item:");
-            double preco = 0;
-            try
-            {
-                preco = Double.parseDouble(scanner.nextLine());
-            }
-            catch (Exception ignored)
-            {
-
-            }
-
-            System.out.println("Quantidade:");
-            int quantidade = 1;
-
-            try
-            {
-                quantidade = Integer.parseInt(scanner.nextLine());
-            }
-            catch (Exception ignored)
-            {
-
+            double preco;
+            while (true) {
+                System.out.println("Preço do item:");
+                try {
+                    preco = Double.parseDouble(scanner.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Valor inválido! Por favor, digite apenas números");
+                }
             }
 
-            pedido.adicionarItem(new Item(nomeItem, quantidade, (int) preco));
+            int quantidade;
+            while (true) {
+                System.out.println("Quantidade:");
+                try {
+                    quantidade = Integer.parseInt(scanner.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Valor inválido! Por favor, digite um número inteiro.");
+                }
+            }
 
-            System.out.println("Adicionar mais itens? (s/n)");
-            continua = scanner.nextLine();
+            pedido.adicionarItem(new Item(nomeItem, preco, quantidade));
+
+            while (true) {
+                System.out.println("Adicionar mais itens? (s/n)");
+                continua = scanner.nextLine();
+
+                if (continua.equalsIgnoreCase("s") || continua.equalsIgnoreCase("n")){
+                    break;
+                }else {
+                    System.out.println("Erro: Opção inválida! Digite apenas 's' para Sim ou 'n' para Não.");
+                }
+            }
+
+
+
+
         }
     }
 
@@ -209,7 +222,7 @@ public class Sistema {
         try {
             return Integer.parseInt(scanner.nextLine());
         } catch (Exception e) {
-            System.out.println("erro");
+            System.out.println("Insira um número valido");
             return -1;
         }
     }
@@ -229,7 +242,7 @@ public class Sistema {
         };
     }
 
-    double calcularValorFinalComDesconteFrete(Pedido pedido){
+    double calcularValorFinalComDescontoFrete(Pedido pedido){
 
         double total = pedido.getTotalPedido();
         Cliente cliente = pedido.getCliente();

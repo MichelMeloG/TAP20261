@@ -19,13 +19,4 @@ public class Db {
     public List<Pedido> getTodosPedidos() {
         return banco;
     }
-
-    public Pedido buscarPorId(int id) {
-        for (Pedido pedido : banco) {
-            if (pedido.getId() == id) {
-                return pedido;
-            }
-        }
-        return null;
-    }
 }

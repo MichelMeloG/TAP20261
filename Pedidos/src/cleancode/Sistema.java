@@ -1,5 +1,10 @@
 package cleancode;
 
+import cleancode.desconto.DescontoClienteComum;
+import cleancode.desconto.DescontoClientePremium;
+import cleancode.desconto.DescontoClienteVip;
+import cleancode.desconto.IRegraDesconto;
+
 import java.util.List;
 import java.util.Scanner;
 
@@ -19,28 +24,14 @@ public class Sistema {
             operacao = lerOpcaoSegura();
 
             switch (operacao){
-                case 1:
-                    novoPedido();
-                    break;
-                case 2:
-                    listar();
-                    break;
-                case 3:
-                    buscarPorId();
-                    break;
-                case 4:
-                    gerarRelatorio();
-                    break;
-                case 5:
-                    cancelar();
-                    break;
-                case 0:
-                    System.out.println("Encerrando Sistema...");
-                    break;
-                default:
-                    System.out.println("Operação Invalida!");
+                case 1 -> novoPedido();
+                case 2 -> listar();
+                case 3 -> buscarPorId();
+                case 4 -> gerarRelatorio();
+                case 5 -> cancelar();
+                case 0 -> System.out.println("Encerrando Sistema...");
+                default -> System.out.println("Operação Invalida!");
             }
-
         }
     }
 
@@ -59,10 +50,9 @@ public class Sistema {
 
         adicionarItensAoPedido(pedido);
 
-        double totalFinal = calcularValorFinalComDescontoFrete(pedido);
+        double totalFinal = calcularTotalFinal(pedido);
         pedido.setTotalPedido(totalFinal);
 
-        pedidos.add(pedido);
         db.save(pedido);
 
         System.out.println("Pedido criado com sucesso");
@@ -200,10 +190,6 @@ public class Sistema {
                     System.out.println("Erro: Opção inválida! Digite apenas 's' para Sim ou 'n' para Não.");
                 }
             }
-
-
-
-
         }
     }
 
@@ -242,29 +228,23 @@ public class Sistema {
         };
     }
 
-    double calcularValorFinalComDescontoFrete(Pedido pedido){
+    private double calcularTotalFinal(Pedido pedido) {
+        double subtotal = pedido.getSubtotalItens();
 
-        double total = pedido.getTotalPedido();
-        Cliente cliente = pedido.getCliente();
+        IRegraDesconto regraDesconto = pedido.getCliente().tipoCliente().getRegra();
+        double valorComDesconto = regraDesconto.calcular(subtotal);
 
-        if (cliente.isComum() && total > 300){
-            total -= total * 0.05;
-        } else if (cliente.isPremium() && total > 200){
-            total -= total * 0.10;
-        } else if (cliente.isPremium() && total < 200){
-            total -= total * 0.03;
-        } else if (cliente.isVip()){
-            total -= total * 0.15;
-        }
+        double valorFrete = calcularValorFrete(valorComDesconto);
 
-        if (total < 100) {
-            total += 25;
-        } else if (total < 300) {
-            total += 15;
-        }
+        return valorComDesconto + valorFrete;
+    }
 
-        return total;
+    
 
+    double calcularValorFrete(double valor) {
+        if (valor < 100) return valor + 25;
+        if (valor < 300) return valor + 15;
+        return valor;
     }
 }
 

@@ -1,17 +1,17 @@
 package cleancode;
 
-
-import cleancode.desconto.IRegraDesconto;
-
 import java.util.List;
 import java.util.Scanner;
 
+//Movi grande parte das responsabilidades do sistema para outras classes,
+//para respeitar melhor o princípio de responsabilidade única
 public class Sistema {
 
     private final Scanner scanner = new Scanner(System.in);
 
     private final Db db = new Db();
     private final List<Pedido> pedidos = db.getTodosPedidos();
+    private final PedidoView pedidoView = new PedidoView();
     //a lista de pedidos estava sendo salva em outra lista e o Db estava inutilizado
 
     public void exibirMenu() {
@@ -21,7 +21,7 @@ public class Sistema {
             imprimirOpcoesMenu();
             operacao = lerOpcaoSegura();
 
-            switch (operacao){
+            switch (operacao) {
                 case 1 -> novoPedido();
                 case 2 -> listar();
                 case 3 -> buscarPorId();
@@ -38,50 +38,25 @@ public class Sistema {
         String nomeCliente = scanner.nextLine();
 
         System.out.println("Tipo cliente (1 comum, 2 premium, 3 vip):");
-        TipoCliente tipoCliente = converterParaTipoCliente(lerOpcaoSegura());
+        TipoCliente tipoCliente = TipoCliente.fromOpcao(lerOpcaoSegura());
 
         int novoId = pedidos.size() + 1;
-        String email = nomeCliente.replace(" ", "").toLowerCase() + "@email.com";
-        Cliente cliente = new Cliente(novoId, nomeCliente, email, tipoCliente);
+        Cliente cliente = new Cliente(novoId, nomeCliente, Cliente.gerarEmail(nomeCliente), tipoCliente);
 
         Pedido pedido = new Pedido(novoId, cliente, StatusPedido.NOVO);
 
         adicionarItensAoPedido(pedido);
 
-        double totalFinal = calcularTotalFinal(pedido);
+        double totalFinal = new CalculaValorPedido().calcularTotalFinal(pedido);
         pedido.setTotalPedido(totalFinal);
 
         db.save(pedido);
 
-        System.out.println("Pedido criado com sucesso");
-        System.out.println("Id: " + pedido.getId());
-        System.out.println("Cliente: " + pedido.getCliente().nome());
-        System.out.println("Total: " + pedido.getTotalPedido());
-
-        if (pedido.getTotalPedido() > 500) {
-            System.out.println("Pedido importante!!!");
-        }
+        pedidoView.exibirConfirmacaoPedido(pedido);
     }
 
     public void listar() {
-
-        if (pedidos.isEmpty()) {
-            System.out.println("sem pedidos");
-        } else {
-            for (Pedido pedido : pedidos) {
-                System.out.println("---------------");
-                System.out.println("id: " + pedido.getId());
-                System.out.println("cliente: " + pedido.getCliente().nome());
-                System.out.println("email: " + pedido.getCliente().email());
-                System.out.println("tipo: " + pedido.getCliente().tipoCliente());
-                System.out.println("status: " + pedido.getStatusPedido());
-                System.out.println("total: " + pedido.getTotalPedido());
-                System.out.println("itens:");
-                for (Item item : pedido.getItens()) {
-                    System.out.println(item.nome() + " - " + item.qtd() + "un" + " - " + "R$" + item.preco() );
-                }
-            }
-        }
+        pedidoView.exibirLista(pedidos);
     }
 
     public void buscarPorId() {
@@ -90,33 +65,9 @@ public class Sistema {
 
         for (Pedido pedido : pedidos) {
             if (pedido.getId() == id) {
-                System.out.println("Pedido encontrado");
-                System.out.println("id: " + pedido.getId());
-                System.out.println("cliente: " + pedido.getCliente().nome());
-                System.out.println("status: " + pedido.getStatusPedido());
-                System.out.println("total: " + pedido.getTotalPedido());
-
-
-                System.out.println("subtotal: " + pedido.getSubtotalItens());
-
-                if (pedido.getCliente().isComum()) {
-                    System.out.println("cliente comum");
-                } else if (pedido.getCliente().isPremium()) {
-                    System.out.println("cliente premium");
-                } else if (pedido.getCliente().isVip()) {
-                    System.out.println("cliente vip");
-                } else {
-                    System.out.println("cliente desconhecido");
-                }
-
-                int contador = 1;
-                for (Item item : pedido.getItens() ) {
-                    System.out.println("item " + contador + ": " + item.nome() + " - " + item.qtd() + "un " + " - R$" + item.preco());
-                    contador++;
-                }
+                pedidoView.exibirDetalhe(pedido);
+                return;
             }
-
-            return;
         }
 
         System.out.println("Pedido não encontrado");
@@ -182,16 +133,16 @@ public class Sistema {
                 System.out.println("Adicionar mais itens? (s/n)");
                 continua = scanner.nextLine();
 
-                if (continua.equalsIgnoreCase("s") || continua.equalsIgnoreCase("n")){
+                if (continua.equalsIgnoreCase("s") || continua.equalsIgnoreCase("n")) {
                     break;
-                }else {
+                } else {
                     System.out.println("Erro: Opção inválida! Digite apenas 's' para Sim ou 'n' para Não.");
                 }
             }
         }
     }
 
-    public void imprimirOpcoesMenu(){
+    public void imprimirOpcoesMenu() {
         System.out.println("==== SISTEMA ====");
         System.out.println("1 - Novo pedido");
         System.out.println("2 - Listar pedidos");
@@ -202,47 +153,14 @@ public class Sistema {
         System.out.print("Opcao: ");
     }
 
-    public int lerOpcaoSegura(){
+
+    //Lê corretamente o input inteiro
+    public int lerOpcaoSegura() {
         try {
             return Integer.parseInt(scanner.nextLine());
-        } catch (Exception e) {
+        } catch (NumberFormatException  e) {
             System.out.println("Insira um número valido");
             return -1;
         }
     }
-
-    private TipoCliente converterParaTipoCliente(int input) {
-        return switch (input) {
-            case 1 :
-                yield TipoCliente.COMUM;
-            case 2 :
-                yield TipoCliente.PREMIUM;
-            case 3 :
-                yield TipoCliente.VIP;
-            default :
-                System.out.println("Tipo de cliente inválido, cliente comum selecionado");
-                yield TipoCliente.COMUM;
-
-        };
-    }
-
-    private double calcularTotalFinal(Pedido pedido) {
-        double subtotal = pedido.getSubtotalItens();
-
-        IRegraDesconto regraDesconto = pedido.getCliente().tipoCliente().getRegra();
-        double valorComDesconto = regraDesconto.calcular(subtotal);
-
-        double valorFrete = calcularValorFrete(valorComDesconto);
-
-        return valorComDesconto + valorFrete;
-    }
-
-    
-
-    double calcularValorFrete(double valor) {
-        if (valor < 100) return valor + 25;
-        if (valor < 300) return valor + 15;
-        return valor;
-    }
 }
-

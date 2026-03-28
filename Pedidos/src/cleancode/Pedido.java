@@ -1,5 +1,7 @@
 package cleancode;
 
+import cleancode.desconto.IRegraDesconto;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +11,6 @@ public class Pedido {
     private final List<Item> itens;
     private double totalPedido;
     private StatusPedido statusPedido;
-
 
     public Pedido(int id, Cliente cliente, StatusPedido status) {
         this.id = id;
@@ -30,17 +31,15 @@ public class Pedido {
         return subtotal;
     }
 
-    public void cancelar(){
+    public void cancelar() {
         this.statusPedido = StatusPedido.CANCELADO;
     }
 
-    public boolean isCancelado(){
+    public boolean isCancelado() {
         return this.statusPedido == StatusPedido.CANCELADO;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
 
     public Cliente getCliente() {
         return cliente;
@@ -54,11 +53,14 @@ public class Pedido {
         return totalPedido;
     }
 
-    public StatusPedido getStatusPedido() {
-        return statusPedido;
-    }
+    public StatusPedido getStatusPedido() { return statusPedido; }
 
     public void setTotalPedido(double totalPedido) {
         this.totalPedido = totalPedido;
     }
+
+    // criei esse metodos para facilitar a chamada deles
+    public IRegraDesconto getRegraDesconto() { return this.getTipoCliente().getRegra(); }
+
+    TipoCliente getTipoCliente() { return this.cliente.tipoCliente(); }
 }

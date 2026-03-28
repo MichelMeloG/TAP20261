@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Db {
 
-    public static List<Pedido> banco = new ArrayList<>();
+    private static final List<Pedido> banco = new ArrayList<>();
 
     public void save(Pedido pedido) {
         try {
